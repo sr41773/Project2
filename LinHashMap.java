@@ -153,7 +153,13 @@ public class LinHashMap <K, V>
     {
         var enSet = new HashSet <Map.Entry <K, V>> ();
 
-        //  T O   B E   I M P L E M E N T E D
+        for (var bucket : hTable) {
+            for (var b = bucket; b != null; b = b.next) {
+                for (var j = 0; j < b.keys; j++) {
+                    enSet.add(new AbstractMap.SimpleEntry<>(b.key[j], b.value[j]));
+                }
+            }
+        }
             
         return enSet;
     } // entrySet
@@ -247,7 +253,33 @@ public class LinHashMap <K, V>
     {
         out.println ("split: bucket chain " + isplit);
 
-        //  T O   B E   I M P L E M E N T E D
+        var oldBucket = hTable.get(isplit);
+        var newBucket = new Bucket();
+        hTable.add(newBucket);
+
+        var tempKeys = new ArrayList<K>();
+        var tempValues = new ArrayList<V>();
+
+        for (var b = oldBucket; b != null; b = b.next) {
+            for (var j = 0; j < b.keys; j++) {
+                tempKeys.add(b.key[j]);
+                tempValues.add(b.value[j]);
+            }
+        }
+
+        oldBucket.keys = 0;
+        oldBucket.next = null;
+
+        for (var i = 0; i < tempKeys.size(); i++) {
+            put(tempKeys.get(i), tempValues.get(i));
+        }
+
+        isplit++;
+        if (isplit == mod1) {
+            isplit = 0;
+            mod1 = mod2;
+            mod2 = 2 * mod1;
+        }
 
     } // split
 
