@@ -7,7 +7,8 @@ Tharushika Dehipitiarachchi
 Anjali Devarapalli
 
 ### Contributions
-Tharushika Contribution: Implemented Set and Split function in LinHashMap
+Tharushika Contribution: Implemented Set and Split function in LinHashMap. Implemented Insert. 
+Added unit tests for duplicate indexes.
 Isra Naweed Contribution: 
 Keerthana Ramesh Contribution: 
 Shriya Rasale Contribution: 

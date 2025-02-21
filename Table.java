@@ -136,7 +136,8 @@ public class Table
         domain = _domain;
         key = _key;
         tuples = new ArrayList<>();
-        index = makeMap();
+        // Ensure index is always initialized (prevent NullPointerException)
+        index = (mType == MapType.NO_MAP) ? new HashMap<>() : makeMap();
         out.println(Arrays.toString(domain));
     } // constructor
 
@@ -176,6 +177,60 @@ public class Table
     // ----------------------------------------------------------------------------------
     // Public Methods
     // ----------------------------------------------------------------------------------
+
+    /************************************************************************************
+ * Create an index for this table based on the primary key.
+ * This index allows fast lookups but does not enforce uniqueness.
+ */
+    public void create_index() {
+        out.println("Creating index for table: " + name);
+
+        // Ensure index is initialized
+        index.clear(); // Reset index
+
+        for (Comparable[] tuple : tuples) {
+            var keyVal = new Comparable[key.length];
+            var cols = match(key);
+            for (var j = 0; j < keyVal.length; j++) {
+                keyVal[j] = tuple[cols[j]];
+            }
+            index.put(new KeyType(keyVal), tuple);
+        }
+    }
+
+    /************************************************************************************
+     * Create a unique index for this table based on the primary key.
+     * This ensures that there are no duplicate primary keys.
+     */
+    public void create_unique_index() {
+        out.println("Creating unique index for table: " + name);
+
+        // Clear any existing index
+        if (index != null) index.clear();
+        
+        // Rebuild the index while enforcing uniqueness
+        for (Comparable[] tuple : tuples) {
+            var keyVal = new Comparable[key.length];
+            var cols = match(key);
+            
+            for (var j = 0; j < keyVal.length; j++) {
+                keyVal[j] = tuple[cols[j]];
+            }
+
+            KeyType keyType = new KeyType(keyVal);
+
+            if (index.containsKey(keyType)) {
+                out.println("Error: Duplicate primary key detected: " + keyType);
+                continue;  // Skip duplicate keys
+            }
+
+            index.put(keyType, tuple);  // Insert into LinHashMap
+        }
+    }
+
+
+    
+
 
     /************************************************************************************
      * Project the tuples onto a lower dimension by keeping only the given
@@ -720,18 +775,28 @@ public class Table
     public int insert(Comparable[] tup) {
         out.println("DML> insert into " + name + " values (" + Arrays.toString(tup) + ")");
 
-        if (typeCheck(tup)) {
-            tuples.add(tup);
-            var keyVal = new Comparable[key.length];
-            var cols = match(key);
-            for (var j = 0; j < keyVal.length; j++)
-                keyVal[j] = tup[cols[j]];
-            if (mType != MapType.NO_MAP)
-                index.put(new KeyType(keyVal), tup);
-            return tuples.size() - 1; // assumes it is added at the end
-        } else {
-            return -1; // insert failed
-        } // if
+        if (!typeCheck(tup)) return -1;  // Validate data types
+
+        var keyVal = new Comparable[key.length];
+        var cols = match(key);
+        
+        for (var j = 0; j < keyVal.length; j++) {
+            keyVal[j] = tup[cols[j]];
+        }
+
+        KeyType keyType = new KeyType(keyVal);
+
+        // If an index exists, use it to enforce uniqueness
+        if (index != null && index.containsKey(keyType)) {
+            out.println("Insert Error: Duplicate key " + keyType);
+            return -1;  // Reject duplicate insertion
+        }
+
+        tuples.add(tup);
+        
+        if (index != null) index.put(keyType, tup);  // Add to LinHashMap index
+        
+        return tuples.size() - 1;  // Return insertion position
     } // insert
 
     /************************************************************************************

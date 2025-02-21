@@ -87,6 +87,46 @@ class MovieDB
         studio.insert (studio2);
         studio.print ();
 
+        //--------------------- CREATE INDEX AND TEST INDEXED OPERATIONS
+
+        out.println("\n>>> TESTING INDEX CREATION AND INDEXED SELECTION <<<");
+
+        // Create an index on `movie`
+        movie.create_index();
+        out.println("Index created for movie table.");
+        out.println("\n>>> Printing Index for Verification <<<");
+        movie.printIndex();
+        movieStar.printIndex();
+
+
+        // Try an indexed select
+        out.println("\n>>> Testing Indexed Select on `movie` for `Star_Wars` <<<");
+        var t_indexed_select = movie.select(new KeyType("Star_Wars", 1977));
+        t_indexed_select.print();
+
+        // Try an indexed select on `movieStar`
+        movieStar.create_unique_index();
+        out.println("\n>>> Testing Indexed Select on `movieStar` for `Harrison_Ford` <<<");
+        var t_indexed_select_star = movieStar.select(new KeyType("Harrison_Ford"));
+        t_indexed_select_star.print();
+
+        //--------------------- TEST UNIQUE INDEX
+
+        out.println("\n>>> TESTING UNIQUE INDEX INSERTION CONSTRAINT <<<");
+        var duplicateFilm = new Comparable[] { "Star_Wars", 1977, 124, "sciFi", "Fox", 12345 };
+        int result = movie.insert(duplicateFilm);
+        if (result == -1) {
+            out.println("✅ Duplicate key prevented successfully.");
+        } else {
+            out.println("❌ Duplicate key was inserted, test failed!");
+        }
+
+        //--------------------- TEST INDEXED JOIN
+
+        out.println("\n>>> TESTING INDEXED JOIN <<<");
+        var t_indexed_join = movie.i_join("studioName", "name", studio);
+        t_indexed_join.print();
+
         movie.save ();
         cinema.save ();
         movieStar.save ();
