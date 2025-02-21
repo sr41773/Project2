@@ -1,10 +1,13 @@
-# Project 1
+# Project 2
 Group Members: 
 Isra Naweed 
 Keerthana Ramesh
 Shriya Rasale
 Tharushika Dehipitiarachchi
 Anjali Devarapalli
+
+### Contributions
+Tharushika Contribution: 
 
 In the union method, "key" is the primary key. However, this is not very useful as there might be cases where "key" is not unique for each row.
 
@@ -20,5 +23,10 @@ public Table select(KeyType keyVal) {
 
         return new Table(name + count++, attribute, domain, key, rows);
     } // select
+
+
+### Important Run Instructions
+For LinHashMap to compile: javac --enable-preview --release 23 LinHashMap.
+To run: java --enable-preview LinHashMap
 
 
