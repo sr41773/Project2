@@ -95,9 +95,9 @@ public class Table
         return switch (mType) {
             case NO_MAP -> null;
             case TREE_MAP -> new TreeMap<>();
-            case HASH_MAP -> new HashMap<>();
+            //case HASH_MAP -> new HashMap<>();
             // Project 2
-            // case LINHASH_MAP -> new LinHashMap <> (KeyType.class, Comparable [].class);
+            case HASH_MAP -> new LinHashMap <> (KeyType.class, Comparable [].class);
             // case BPTREE_MAP -> new BpTreeMap <> (KeyType.class, Comparable [].class);
             default -> null;
         }; // switch
