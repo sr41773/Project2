@@ -8,6 +8,8 @@
  */
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Objects;
 
 import static java.lang.System.out;
 
@@ -28,7 +30,7 @@ public class KeyType
      */
     public KeyType (Comparable [] _key)
     {
-         key = _key;
+        this.key = Arrays.copyOf(_key, _key.length);
     } // constructor
 
     /*************************************************************************************
@@ -51,9 +53,13 @@ public class KeyType
     public int compareTo (KeyType k)
     {
         for (var i = 0; i < key.length; i++) {
-            if (key [i].compareTo (k.key [i]) < 0) return -1;
-            if (key [i].compareTo (k.key [i]) > 0) return 1;
-        } // for
+            if (this.key[i] == null && k.key[i] == null) continue;  // Both null, consider equal
+            if (this.key[i] == null) return -1; // Null is considered smaller
+            if (k.key[i] == null) return 1;
+            
+            int cmp = this.key[i].compareTo(k.key[i]);
+            if (cmp != 0) return cmp;
+        }
         return 0;
     } // compareTo
 
@@ -73,9 +79,7 @@ public class KeyType
      */
     public int hashCode ()
     {
-        var sum = 0;
-        for (var i = 0; i < key.length; i++) sum = 7 * sum + key [i].hashCode ();
-        return sum;
+        return Objects.hash((Object[]) key);
     } // hashCode
 
     /*************************************************************************************
