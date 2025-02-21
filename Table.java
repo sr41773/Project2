@@ -616,66 +616,66 @@ public class Table
      * @return a table with tuples satisfying the equality predicate
      */
     public Table i_join(String attributes1, String attributes2, Table table2) {
-    out.println("RA> " + name + ".i_join (" + attributes1 + ", " + attributes2 + ", " + table2.name + ")");
+        out.println("RA> " + name + ".i_join (" + attributes1 + ", " + attributes2 + ", " + table2.name + ")");
 
-    // Split the attributes into arrays
-    var t_attrs = attributes1.split(" ");
-    var u_attrs = attributes2.split(" ");
+        // Split the attributes into arrays
+        var t_attrs = attributes1.split(" ");
+        var u_attrs = attributes2.split(" ");
 
-    // Get column positions for join attributes in both tables
-    int[] t_cols = match(t_attrs);
-    int[] u_cols = table2.match(u_attrs);
+        // Get column positions for join attributes in both tables
+        int[] t_cols = match(t_attrs);
+        int[] u_cols = table2.match(u_attrs);
 
-    // Create a hash index for table2 (the build phase)
-    Map<String, List<Comparable[]>> hashIndex = new HashMap<>();
-    
-    // Build phase - create hash index on table2
-    for (Comparable[] tuple2 : table2.tuples) {
-        // Create composite key from join attributes
-        StringBuilder keyBuilder = new StringBuilder();
-        for (int col : u_cols) {
-            if (tuple2[col] != null) {  // Handle null values
-                keyBuilder.append(tuple2[col]).append(":");
+        // Create a hash index for table2 (the build phase)
+        Map<String, List<Comparable[]>> hashIndex = new HashMap<>();
+        
+        // Build phase - create hash index on table2
+        for (Comparable[] tuple2 : table2.tuples) {
+            // Create composite key from join attributes
+            StringBuilder keyBuilder = new StringBuilder();
+            for (int col : u_cols) {
+                if (tuple2[col] != null) {  // Handle null values
+                    keyBuilder.append(tuple2[col]).append(":");
+                }
+            }
+            String joinKey = keyBuilder.toString();
+            
+            // Add tuple to hash index
+            hashIndex.computeIfAbsent(joinKey, k -> new ArrayList<>()).add(tuple2);
+        }
+
+        // Probe phase - use the index to find matches
+        List<Comparable[]> results = new ArrayList<>();
+        
+        // For each tuple in the first table
+        for (Comparable[] tuple1 : tuples) {
+            // Create the join key
+            StringBuilder keyBuilder = new StringBuilder();
+            for (int col : t_cols) {
+                if (tuple1[col] != null) {  // Handle null values
+                    keyBuilder.append(tuple1[col]).append(":");
+                }
+            }
+            String joinKey = keyBuilder.toString();
+            
+            // Look up matching tuples in the hash index
+            List<Comparable[]> matches = hashIndex.get(joinKey);
+            
+            if (matches != null) {
+                // For each matching tuple, create a joined tuple
+                for (Comparable[] tuple2 : matches) {
+                    results.add(concat(tuple1, tuple2));
+                }
             }
         }
-        String joinKey = keyBuilder.toString();
-        
-        // Add tuple to hash index
-        hashIndex.computeIfAbsent(joinKey, k -> new ArrayList<>()).add(tuple2);
-    }
 
-    // Probe phase - use the index to find matches
-    List<Comparable[]> results = new ArrayList<>();
-    
-    // For each tuple in the first table
-    for (Comparable[] tuple1 : tuples) {
-        // Create the join key
-        StringBuilder keyBuilder = new StringBuilder();
-        for (int col : t_cols) {
-            if (tuple1[col] != null) {  // Handle null values
-                keyBuilder.append(tuple1[col]).append(":");
-            }
-        }
-        String joinKey = keyBuilder.toString();
-        
-        // Look up matching tuples in the hash index
-        List<Comparable[]> matches = hashIndex.get(joinKey);
-        
-        if (matches != null) {
-            // For each matching tuple, create a joined tuple
-            for (Comparable[] tuple2 : matches) {
-                results.add(concat(tuple1, tuple2));
-            }
-        }
-    }
-
-    // Return the resulting table
-    return new Table(name + count++, 
-                    concat(attribute, table2.attribute),
-                    concat(domain, table2.domain), 
-                    key, 
-                    results);
-} // i_join
+        // Return the resulting table
+        return new Table(name + count++, 
+                        concat(attribute, table2.attribute),
+                        concat(domain, table2.domain), 
+                        key, 
+                        results);
+    } // i_join
 
     /************************************************************************************
      * Join this table and table2 by performing an NATURAL JOIN. Tuples from both
