@@ -7,7 +7,12 @@ Tharushika Dehipitiarachchi
 Anjali Devarapalli
 
 ### Contributions
-Tharushika Contribution: 
+Tharushika Contribution: Implemented Set and Split function in LinHashMap
+Isra Naweed Contribution: 
+Keerthana Ramesh Contribution: 
+Shriya Rasale Contribution: 
+Anjali Devarapalli Contribution: 
+
 
 In the union method, "key" is the primary key. However, this is not very useful as there might be cases where "key" is not unique for each row.
 
