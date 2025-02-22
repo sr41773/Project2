@@ -94,9 +94,6 @@ class MovieDB
         // Create an index on `movie`
         movie.create_index();
         out.println("Index created for movie table.");
-        out.println("\n>>> Printing Index for Verification <<<");
-        movie.printIndex();
-        movieStar.printIndex();
 
 
         // Try an indexed select
