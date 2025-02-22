@@ -432,15 +432,31 @@ public class Table
      * @param keyVal the given key value
      * @return a table with the tuple satisfying the key predicate
      */
+   
     public Table select(KeyType keyVal) {
         out.println("RA> " + name + ".select (" + keyVal + ")");
-
+    
         List<Comparable[]> rows = new ArrayList<>();
-
-        // T O B E I M P L E M E N T E D - Project 2
-
+    
+        // Check if the index exists (we assume index is already populated via create_index)
+        if (index == null) {
+            out.println("Error: No index available for this table.");
+            return null;
+        }
+    
+        // Look for the key in the index
+        Comparable[] tuple = index.get(keyVal);
+    
+        if (tuple != null) {
+            // If a matching tuple is found, add it to the result list
+            rows.add(tuple);
+        } else {
+            out.println("No matching tuple found for key: " + keyVal);
+        }
+    
+        // Return a new Table with the selected rows
         return new Table(name + count++, attribute, domain, key, rows);
-    } // select
+    }
 
     /************************************************************************************
      * Union this table and table2. Check that the two tables are compatible.
