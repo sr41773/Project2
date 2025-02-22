@@ -95,9 +95,9 @@ public class Table
         return switch (mType) {
             case NO_MAP -> null;
             case TREE_MAP -> new TreeMap<>();
-            //case HASH_MAP -> new HashMap<>();
+            // case HASH_MAP -> new HashMap<>();
             // Project 2
-            case HASH_MAP -> new LinHashMap <> (KeyType.class, Comparable [].class);
+            case HASH_MAP -> new LinHashMap<>(KeyType.class, Comparable[].class);
             // case BPTREE_MAP -> new BpTreeMap <> (KeyType.class, Comparable [].class);
             default -> null;
         }; // switch
@@ -179,9 +179,9 @@ public class Table
     // ----------------------------------------------------------------------------------
 
     /************************************************************************************
- * Create an index for this table based on the primary key.
- * This index allows fast lookups but does not enforce uniqueness.
- */
+     * Create an index for this table based on the primary key.
+     * This index allows fast lookups but does not enforce uniqueness.
+     */
     public void create_index() {
         out.println("Creating index for table: " + name);
 
@@ -206,13 +206,14 @@ public class Table
         out.println("Creating unique index for table: " + name);
 
         // Clear any existing index
-        if (index != null) index.clear();
-        
+        if (index != null)
+            index.clear();
+
         // Rebuild the index while enforcing uniqueness
         for (Comparable[] tuple : tuples) {
             var keyVal = new Comparable[key.length];
             var cols = match(key);
-            
+
             for (var j = 0; j < keyVal.length; j++) {
                 keyVal[j] = tuple[cols[j]];
             }
@@ -221,16 +222,12 @@ public class Table
 
             if (index.containsKey(keyType)) {
                 out.println("Error: Duplicate primary key detected: " + keyType);
-                continue;  // Skip duplicate keys
+                continue; // Skip duplicate keys
             }
 
-            index.put(keyType, tuple);  // Insert into LinHashMap
+            index.put(keyType, tuple); // Insert into LinHashMap
         }
     }
-
-
-    
-
 
     /************************************************************************************
      * Project the tuples onto a lower dimension by keeping only the given
@@ -246,23 +243,31 @@ public class Table
         out.println("RA> " + name + ".project (" + attributes + ")");
         var attrs = attributes.split(" ");
         var colDomain = extractDom(match(attrs), domain);
-        var newKey = (Arrays.asList(attrs).containsAll(Arrays.asList(key))) ? key : attrs;
+
+        // Find minimal key that exists in attrs
+        var projectedKey = Arrays.stream(key)
+                .filter(attr -> Arrays.asList(attrs).contains(attr))
+                .toArray(String[]::new);
 
         List<Comparable[]> rows = new ArrayList<>();
+        LinHashMap<KeyType, Boolean> tempIndex = new LinHashMap<>(KeyType.class, Boolean.class);
 
-        // Determine column positions for the attributes to project
         int[] colPositions = match(attrs);
 
-        // Extract the projected columns from each tuple
         for (Comparable[] tuple : tuples) {
             Comparable[] projectedTuple = new Comparable[colPositions.length];
             for (int i = 0; i < colPositions.length; i++) {
                 projectedTuple[i] = tuple[colPositions[i]];
             }
-            rows.add(projectedTuple);
+            KeyType key = new KeyType(projectedTuple);
+
+            if (!tempIndex.containsKey(key)) {
+                tempIndex.put(key, true);
+                rows.add(projectedTuple);
+            }
         }
 
-        return new Table(name + count++, attrs, colDomain, newKey, rows);
+        return new Table(name + count++, attrs, colDomain, projectedKey, rows);
     } // project
 
     /************************************************************************************
@@ -447,21 +452,45 @@ public class Table
      */
     public Table union(Table table2) {
         out.println("RA> " + name + ".union (" + table2.name + ")");
+
         if (!compatible(table2))
             return null;
 
         List<Comparable[]> rows = new ArrayList<>();
+        LinHashMap<KeyType, Boolean> tempIndex = new LinHashMap<>(KeyType.class, Boolean.class);
 
-        // Add all rows from this table
-        rows.addAll(tuples);
+        // Add tuples from this table (ensuring no duplicates)
+        for (Comparable[] t : tuples) {
+            KeyType key = new KeyType(t);
+            if (!tempIndex.containsKey(key)) {
+                tempIndex.put(key, true);
+                rows.add(t);
+            }
+        }
 
-        // Add all rows from table2
-        rows.addAll(table2.tuples);
+        // Add tuples from table2 (ensuring no duplicates)
+        for (Comparable[] t : table2.tuples) {
+            KeyType key = new KeyType(t);
+            if (!tempIndex.containsKey(key)) {
+                tempIndex.put(key, true);
+                rows.add(t);
+            }
+        }
 
-        // T O B E I M P L E M E N T E D
+        // Determine a valid key for the new table (Without Streams)
+        List<String> newKeyList = new ArrayList<>();
+        for (String attr : key) {
+            for (String column : attribute) {
+                if (attr.equals(column)) {
+                    newKeyList.add(attr);
+                    break; // Avoid duplicates
+                }
+            }
+        }
+        String[] newKey = newKeyList.toArray(new String[0]);
 
-        return new Table(name + count++, attribute, domain, key, rows);
-    } // union
+        return new Table(name + count++, attribute, domain, newKey, rows);
+    } // Union
 
     /************************************************************************************
      * Take the difference of this table and table2. Check that the two tables are
@@ -516,41 +545,42 @@ public class Table
      * @return a table with tuples satisfying the equality predicate
      */
     public Table join(String attributes1, String attributes2, Table table2) {
-    out.println("RA> " + name + ".join (" + attributes1 + ", " + attributes2 + ", " + table2.name + ")");
+        out.println("RA> " + name + ".join (" + attributes1 + ", " + attributes2 + ", " + table2.name + ")");
 
-    var t_attrs = attributes1.split(" ");
-    var u_attrs = attributes2.split(" ");
-    var rows = new ArrayList<Comparable[]>();
+        var t_attrs = attributes1.split(" ");
+        var u_attrs = attributes2.split(" ");
+        var rows = new ArrayList<Comparable[]>();
 
-    // Get column indices for join attributes in both tables
-    int[] t_cols = match(t_attrs);
-    int[] u_cols = table2.match(u_attrs);
+        // Get column indices for join attributes in both tables
+        int[] t_cols = match(t_attrs);
+        int[] u_cols = table2.match(u_attrs);
 
-    // Nested loop join
-    for (var t : tuples) {
-        for (var u : table2.tuples) {
-            boolean joinMatch = true;
-            
-            // Check if join attributes match
-            for (int j = 0; j < t_cols.length; j++) {
-                if (!t[t_cols[j]].equals(u[u_cols[j]])) {
-                    joinMatch = false;
-                    break;
+        // Nested loop join
+        for (var t : tuples) {
+            for (var u : table2.tuples) {
+                boolean joinMatch = true;
+
+                // Check if join attributes match
+                for (int j = 0; j < t_cols.length; j++) {
+                    if (!t[t_cols[j]].equals(u[u_cols[j]])) {
+                        joinMatch = false;
+                        break;
+                    }
+                }
+
+                if (joinMatch) {
+                    rows.add(concat(t, u));
                 }
             }
-
-            if (joinMatch) {
-                rows.add(concat(t, u));
-            }
         }
+
+        return new Table(name + count++,
+                concat(attribute, table2.attribute),
+                concat(domain, table2.domain),
+                key,
+                rows);
     }
 
-    return new Table(name + count++, 
-                    concat(attribute, table2.attribute),
-                    concat(domain, table2.domain), 
-                    key, 
-                    rows);
-}
     /************************************************************************************
      * Join this table and table2 by performing a "theta-join". Tuples from both
      * tables
@@ -566,44 +596,44 @@ public class Table
      * @return a table with tuples satisfying the condition
      */
     public Table join(String condition, Table table2) {
-    out.println("RA> " + name + ".join (" + condition + ", " + table2.name + ")");
+        out.println("RA> " + name + ".join (" + condition + ", " + table2.name + ")");
 
-    var rows = new ArrayList<Comparable[]>();
-    var token = condition.split(" ");
-    
-    if (token.length != 3) {
-        out.println("join ERROR: malformed theta-join condition");
-        return null;
-    }
+        var rows = new ArrayList<Comparable[]>();
+        var token = condition.split(" ");
 
-    var attr1 = token[0];
-    var op = token[1];
-    var attr2 = token[2];
+        if (token.length != 3) {
+            out.println("join ERROR: malformed theta-join condition");
+            return null;
+        }
 
-    var col1 = col(attr1);
-    var col2 = table2.col(attr2);
+        var attr1 = token[0];
+        var op = token[1];
+        var attr2 = token[2];
 
-    // Check if columns exist
-    if (col1 == -1 || col2 == -1) {
-        out.println("join ERROR: attributes not found");
-        return null;
-    }
+        var col1 = col(attr1);
+        var col2 = table2.col(attr2);
 
-    // Nested loop join with theta condition
-    for (var t : tuples) {
-        for (var u : table2.tuples) {
-            if (satifies(t, col1, op, u[col2].toString())) {
-                rows.add(concat(t, u));
+        // Check if columns exist
+        if (col1 == -1 || col2 == -1) {
+            out.println("join ERROR: attributes not found");
+            return null;
+        }
+
+        // Nested loop join with theta condition
+        for (var t : tuples) {
+            for (var u : table2.tuples) {
+                if (satifies(t, col1, op, u[col2].toString())) {
+                    rows.add(concat(t, u));
+                }
             }
         }
-    }
 
-    return new Table(name + count++, 
-                    concat(attribute, table2.attribute),
-                    concat(domain, table2.domain), 
-                    key, 
-                    rows);
-}// join
+        return new Table(name + count++,
+                concat(attribute, table2.attribute),
+                concat(domain, table2.domain),
+                key,
+                rows);
+    }// join
 
     /************************************************************************************
      * Join this table and table2 by performing an "equi-join". Same as above
@@ -628,39 +658,39 @@ public class Table
 
         // Create a hash index for table2 (the build phase)
         Map<String, List<Comparable[]>> hashIndex = new HashMap<>();
-        
+
         // Build phase - create hash index on table2
         for (Comparable[] tuple2 : table2.tuples) {
             // Create composite key from join attributes
             StringBuilder keyBuilder = new StringBuilder();
             for (int col : u_cols) {
-                if (tuple2[col] != null) {  // Handle null values
+                if (tuple2[col] != null) { // Handle null values
                     keyBuilder.append(tuple2[col]).append(":");
                 }
             }
             String joinKey = keyBuilder.toString();
-            
+
             // Add tuple to hash index
             hashIndex.computeIfAbsent(joinKey, k -> new ArrayList<>()).add(tuple2);
         }
 
         // Probe phase - use the index to find matches
         List<Comparable[]> results = new ArrayList<>();
-        
+
         // For each tuple in the first table
         for (Comparable[] tuple1 : tuples) {
             // Create the join key
             StringBuilder keyBuilder = new StringBuilder();
             for (int col : t_cols) {
-                if (tuple1[col] != null) {  // Handle null values
+                if (tuple1[col] != null) { // Handle null values
                     keyBuilder.append(tuple1[col]).append(":");
                 }
             }
             String joinKey = keyBuilder.toString();
-            
+
             // Look up matching tuples in the hash index
             List<Comparable[]> matches = hashIndex.get(joinKey);
-            
+
             if (matches != null) {
                 // For each matching tuple, create a joined tuple
                 for (Comparable[] tuple2 : matches) {
@@ -670,11 +700,11 @@ public class Table
         }
 
         // Return the resulting table
-        return new Table(name + count++, 
-                        concat(attribute, table2.attribute),
-                        concat(domain, table2.domain), 
-                        key, 
-                        results);
+        return new Table(name + count++,
+                concat(attribute, table2.attribute),
+                concat(domain, table2.domain),
+                key,
+                results);
     } // i_join
 
     /************************************************************************************
@@ -690,75 +720,75 @@ public class Table
      * @return a table with tuples satisfying the equality predicate
      */
     public Table join(Table table2) {
-    out.println("RA> " + name + ".join (" + table2.name + ")");
+        out.println("RA> " + name + ".join (" + table2.name + ")");
 
-    // Find common attributes
-    List<String> commonAttrs = new ArrayList<>();
-    List<Integer> t_cols = new ArrayList<>();
-    List<Integer> u_cols = new ArrayList<>();
-    
-    for (int i = 0; i < attribute.length; i++) {
-        for (int j = 0; j < table2.attribute.length; j++) {
-            if (attribute[i].equals(table2.attribute[j])) {
-                commonAttrs.add(attribute[i]);
-                t_cols.add(i);
-                u_cols.add(j);
-            }
-        }
-    }
+        // Find common attributes
+        List<String> commonAttrs = new ArrayList<>();
+        List<Integer> t_cols = new ArrayList<>();
+        List<Integer> u_cols = new ArrayList<>();
 
-    // Create new attribute and domain arrays (without duplicates)
-    List<String> newAttrs = new ArrayList<>(Arrays.asList(attribute));
-    List<Class> newDoms = new ArrayList<>(Arrays.asList(domain));
-    
-    for (int i = 0; i < table2.attribute.length; i++) {
-        if (!commonAttrs.contains(table2.attribute[i])) {
-            newAttrs.add(table2.attribute[i]);
-            newDoms.add(table2.domain[i]);
-        }
-    }
-
-    var rows = new ArrayList<Comparable[]>();
-
-    // Perform natural join
-    for (var t : tuples) {
-        for (var u : table2.tuples) {
-            boolean matchAll = true;
-            
-            // Check if all common attributes match
-            for (int i = 0; i < commonAttrs.size(); i++) {
-                if (!t[t_cols.get(i)].equals(u[u_cols.get(i)])) {
-                    matchAll = false;
-                    break;
+        for (int i = 0; i < attribute.length; i++) {
+            for (int j = 0; j < table2.attribute.length; j++) {
+                if (attribute[i].equals(table2.attribute[j])) {
+                    commonAttrs.add(attribute[i]);
+                    t_cols.add(i);
+                    u_cols.add(j);
                 }
             }
+        }
 
-            if (matchAll) {
-                // Create new tuple with correct number of attributes
-                Comparable[] newTuple = new Comparable[newAttrs.size()];
-                
-                // Copy attributes from first tuple
-                System.arraycopy(t, 0, newTuple, 0, t.length);
-                
-                // Copy non-common attributes from second tuple
-                int pos = t.length;
-                for (int i = 0; i < table2.attribute.length; i++) {
-                    if (!commonAttrs.contains(table2.attribute[i])) {
-                        newTuple[pos++] = u[i];
+        // Create new attribute and domain arrays (without duplicates)
+        List<String> newAttrs = new ArrayList<>(Arrays.asList(attribute));
+        List<Class> newDoms = new ArrayList<>(Arrays.asList(domain));
+
+        for (int i = 0; i < table2.attribute.length; i++) {
+            if (!commonAttrs.contains(table2.attribute[i])) {
+                newAttrs.add(table2.attribute[i]);
+                newDoms.add(table2.domain[i]);
+            }
+        }
+
+        var rows = new ArrayList<Comparable[]>();
+
+        // Perform natural join
+        for (var t : tuples) {
+            for (var u : table2.tuples) {
+                boolean matchAll = true;
+
+                // Check if all common attributes match
+                for (int i = 0; i < commonAttrs.size(); i++) {
+                    if (!t[t_cols.get(i)].equals(u[u_cols.get(i)])) {
+                        matchAll = false;
+                        break;
                     }
                 }
-                
-                rows.add(newTuple);
+
+                if (matchAll) {
+                    // Create new tuple with correct number of attributes
+                    Comparable[] newTuple = new Comparable[newAttrs.size()];
+
+                    // Copy attributes from first tuple
+                    System.arraycopy(t, 0, newTuple, 0, t.length);
+
+                    // Copy non-common attributes from second tuple
+                    int pos = t.length;
+                    for (int i = 0; i < table2.attribute.length; i++) {
+                        if (!commonAttrs.contains(table2.attribute[i])) {
+                            newTuple[pos++] = u[i];
+                        }
+                    }
+
+                    rows.add(newTuple);
+                }
             }
         }
-    }
 
-    return new Table(name + count++,
-                    newAttrs.toArray(new String[0]),
-                    newDoms.toArray(new Class[0]),
-                    key,
-                    rows);
-} // join
+        return new Table(name + count++,
+                newAttrs.toArray(new String[0]),
+                newDoms.toArray(new Class[0]),
+                key,
+                rows);
+    } // join
 
     /************************************************************************************
      * Return the column position for the given attribute name or -1 if not found.
@@ -786,11 +816,12 @@ public class Table
     public int insert(Comparable[] tup) {
         out.println("DML> insert into " + name + " values (" + Arrays.toString(tup) + ")");
 
-        if (!typeCheck(tup)) return -1;  // Validate data types
+        if (!typeCheck(tup))
+            return -1; // Validate data types
 
         var keyVal = new Comparable[key.length];
         var cols = match(key);
-        
+
         for (var j = 0; j < keyVal.length; j++) {
             keyVal[j] = tup[cols[j]];
         }
@@ -800,14 +831,15 @@ public class Table
         // If an index exists, use it to enforce uniqueness
         if (index != null && index.containsKey(keyType)) {
             out.println("Insert Error: Duplicate key " + keyType);
-            return -1;  // Reject duplicate insertion
+            return -1; // Reject duplicate insertion
         }
 
         tuples.add(tup);
-        
-        if (index != null) index.put(keyType, tup);  // Add to LinHashMap index
-        
-        return tuples.size() - 1;  // Return insertion position
+
+        if (index != null)
+            index.put(keyType, tup); // Add to LinHashMap index
+
+        return tuples.size() - 1; // Return insertion position
     } // insert
 
     /************************************************************************************
@@ -947,17 +979,18 @@ public class Table
         int[] colPos = new int[column.length];
 
         for (var j = 0; j < column.length; j++) {
-            var matched = false;
+            colPos[j] = -1; // Default to -1 (not found)
             for (var k = 0; k < attribute.length; k++) {
                 if (column[j].equals(attribute[k])) {
-                    matched = true;
                     colPos[j] = k;
-                } // for
-            } // for
-            if (!matched)
-                out.println("match: domain not found for " + column[j]);
-        } // for
-
+                    break; // Found the column, stop searching
+                }
+            }
+            // Ensure valid index
+            if (colPos[j] == -1) {
+                throw new IllegalArgumentException("ERROR: Column '" + column[j] + "' not found in table.");
+            }
+        }
         return colPos;
     } // match
 
