@@ -9,12 +9,13 @@ Anjali Devarapalli
 ### Contributions
 Tharushika Contribution: Implemented Set and Split function in LinHashMap. Implemented Insert. 
 Added unit tests for duplicate indexes. Made create_index and create_unique_index
-Isra Naweed Contribution: 
+Isra Naweed Contribution: Implemented minus operation using index. Added support for NO_MAP, TREE_MAP, and HASH_MAP.
 Keerthana Ramesh Contribution: 
 Shriya Rasale Contribution: 
 Anjali Devarapalli Contribution: Implemented Union without duplicates and Project without duplicate functions. Tested union and project implementations. 
 Shriya Rasale Contribution: Select Relation
 
+In the minus method, we improved performance by using index for lookups. It also makes sure that implementation is useful for larger datasets.
 
 In the union method, "key" is the primary key. However, this is not very useful as there might be cases where "key" is not unique for each row.
 
