@@ -13,7 +13,7 @@ Isra Naweed Contribution:
 Keerthana Ramesh Contribution: 
 Shriya Rasale Contribution: Select method
 Anjali Devarapalli Contribution: Implemented Union without duplicates and Project without duplicate functions. Tested union and project implementations. 
-Shriya Rasale Contribution: Select Relation
+
 
 
 In the union method, "key" is the primary key. However, this is not very useful as there might be cases where "key" is not unique for each row.
