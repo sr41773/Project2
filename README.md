@@ -11,25 +11,12 @@ Tharushika Contribution: Implemented Set and Split function in LinHashMap. Imple
 Added unit tests for duplicate indexes. Made create_index and create_unique_index
 Isra Naweed Contribution: 
 Keerthana Ramesh Contribution: 
-Shriya Rasale Contribution: 
+Shriya Rasale Contribution: Select method
 Anjali Devarapalli Contribution: Implemented Union without duplicates and Project without duplicate functions. Tested union and project implementations. 
 Shriya Rasale Contribution: Select Relation
 
 
 In the union method, "key" is the primary key. However, this is not very useful as there might be cases where "key" is not unique for each row.
-
-We did not implement the Harrison_Ford test case which corresponded to the below method which was to be 
-implemented in Project 2.
-
-public Table select(KeyType keyVal) {
-        out.println("RA> " + name + ".select (" + keyVal + ")");
-
-        List<Comparable[]> rows = new ArrayList<>();
-
-        // T O B E I M P L E M E N T E D - Project 2
-
-        return new Table(name + count++, attribute, domain, key, rows);
-    } // select
 
 
 ### Important Run Instructions
