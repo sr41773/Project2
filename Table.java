@@ -432,28 +432,29 @@ public class Table
      * @param keyVal the given key value
      * @return a table with the tuple satisfying the key predicate
      */
-   
+
     public Table select(KeyType keyVal) {
         out.println("RA> " + name + ".select (" + keyVal + ")");
-    
+
         List<Comparable[]> rows = new ArrayList<>();
-    
-        // Check if the index exists (we assume index is already populated via create_index)
+
+        // Check if the index exists (we assume index is already populated via
+        // create_index)
         if (index == null) {
             out.println("Error: No index available for this table.");
             return null;
         }
-    
+
         // Look for the key in the index
         Comparable[] tuple = index.get(keyVal);
-    
+
         if (tuple != null) {
             // If a matching tuple is found, add it to the result list
             rows.add(tuple);
         } else {
             out.println("No matching tuple found for key: " + keyVal);
         }
-    
+
         // Return a new Table with the selected rows
         return new Table(name + count++, attribute, domain, key, rows);
     }
@@ -519,28 +520,30 @@ public class Table
      */
     public Table minus(Table table2) {
         out.println("RA> " + name + ".minus (" + table2.name + ")");
-        if (!compatible(table2))
+        if (!compatible(table2)) {
+            out.println("minus ERROR: tables are not compatible");
             return null;
+        }
 
         List<Comparable[]> rows = new ArrayList<>();
 
         // Iterate through the tuples of this table
-        for (var t : tuples) {
-            boolean found = false;
-
-            // Check if the tuple exists in table2
-            for (var t2 : table2.tuples) {
-                if (Arrays.equals(t, t2)) {
-                    found = true;
-                    break;
-                }
+        for (var tuple : tuples) {
+            // Extract the key for the current tuple
+            var keyVal = new Comparable[key.length];
+            var cols = match(key);
+            for (var j = 0; j < keyVal.length; j++) {
+                keyVal[j] = tuple[cols[j]];
             }
+            KeyType keyType = new KeyType(keyVal);
 
-            // Add the tuple to the result if it does not exist in table2
-            if (!found)
-                rows.add(t);
+            // Check if the key exists in table2's index
+            if (table2.index == null || !table2.index.containsKey(keyType)) {
+                // If the key is not found in table2, add the tuple to the result
+                rows.add(tuple);
+            }
         }
-
+        // Return the resulting table
         return new Table(name + count++, attribute, domain, key, rows);
     } // minus
 
