@@ -11,7 +11,7 @@ Tharushika Contribution: Implemented Set and Split function in LinHashMap. Imple
 Added unit tests for duplicate indexes. Made create_index and create_unique_index
 Isra Naweed Contribution: 
 Keerthana Ramesh Contribution: 
-Shriya Rasale Contribution: 
+Shriya Rasale Contribution: Select Relation
 Anjali Devarapalli Contribution: 
 
 
