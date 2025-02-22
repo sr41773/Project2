@@ -9,9 +9,9 @@ Anjali Devarapalli
 ### Contributions
 Tharushika Contribution: Implemented Set and Split function in LinHashMap. Implemented Insert. 
 Added unit tests for duplicate indexes. Made create_index and create_unique_index
-Isra Naweed Contribution: 
-Keerthana Ramesh Contribution: 
-Shriya Rasale Contribution: Select method
+Isra Naweed Contribution: minus using index
+Keerthana Ramesh Contribution: indexed join and tested indexed join
+Shriya Rasale Contribution: Select method and tested
 Anjali Devarapalli Contribution: Implemented Union without duplicates and Project without duplicate functions. Tested union and project implementations. 
 
 
